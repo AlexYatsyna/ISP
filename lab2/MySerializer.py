@@ -4,6 +4,10 @@ import json
 import dis
 import opcode
 import weakref
+import types
+import yaml
+import toml
+import pickle
 
 from modules.consoleParser import * 
 from modules.try1 import t
@@ -114,6 +118,76 @@ class MySerializer:
                     dic[attribute]=value
             return dic
 
+    def dic_type(self,dic):
+        if dic["__type__"] == "object":
+
+            class_name = globals()[dic['__class__']]
+            init_args = inspect.getfullargspec(class_name).args
+            args = {}
+
+            for arg in init_args:
+                if arg in dic:
+                    args[arg] = dic[arg]
+            obj = class_name(**args) 
+
+            for attr in obj.__dir__():
+
+                if isinstance(getattr(obj, attr), dict) and not attr.startswith('__'):
+                    object_attr  = self.dic_type(getattr(obj, attr))
+                    setattr(obj, attr, object_attr)  
+
+                elif not attr.startswith('__') and attr not in args:
+                    object_attr = getattr(obj, attr)
+
+                    if not callable(object_attr):
+                        setattr(obj, attr, dic[attr])
+            return obj
+
+        elif dic["__type__"] == "function":
+            list_of_args=[]
+            import importlib
+            list_of_globals = dic["globals"]
+
+            for glob in list_of_globals:
+
+                if str.isnumeric(list_of_globals[glob]):
+                    list_of_globals[glob]=int(list_of_globals[glob])
+
+                else:
+
+                    if list_of_globals[glob].find("module") > 0 :
+                        if list_of_globals[glob].find("from") > 0 :
+                            value = list_of_globals[glob][9:list_of_globals[glob].find("from")-2]
+                            list_of_globals[glob] = importlib.import_module(value)    
+
+            for arg in dic:
+                if arg == "args":
+                    for value_args in dic[arg]:
+                        list_of_args.append(dic[arg][value_args])  
+
+            code = types.CodeType(int(list_of_args[0]),int(list_of_args[1]),int(list_of_args[2]),
+            int(list_of_args[3]),int(list_of_args[4]),int(list_of_args[5]),
+            bytes.fromhex(list_of_args[6]),tuple(list_of_args[7]),tuple(list_of_args[8]),
+            tuple(list_of_args[9]),list_of_args[10],list_of_args[11],int(list_of_args[12]),
+            bytes.fromhex(list_of_args[13]))
+
+            return types.FunctionType(code,list_of_globals)
+
+        else:
+            vars = {}
+            argsN = []
+            name = dic["__class__"][17:-2]
+            for attr in dic:
+
+                if not isinstance(dic[attr], dict) and not attr.startswith('__'):
+                    vars[attr] = dic[attr]
+
+                elif isinstance(dic[attr], dict) and not attr.startswith('__'):
+                    if dic[attr]['__type__'] == 'function':
+                        vars[attr] = self.dic_type(dic[attr])
+
+            return type(name, (object, ), vars)
+
 
  
 def SaveToJson(dic):
@@ -151,3 +225,126 @@ def SaveToJson(dic):
         stri+="}"
 
     return stri
+
+class JSON_S(MySerializer):
+    def dump(self, obj, file_path):
+        data = super().obj_dic(obj)
+        with open(file_path, "w") as file:
+            #json.dump(data , file)
+            file.write(SaveToJson(data))
+
+    def dumps(self, obj):
+        dic = super().obj_dic(obj)
+        json_obj = SaveToJson(dic)
+        return json_obj
+
+    def loads(self, s):
+        data = json.loads(s)
+        result = super().dic_type(data)
+        return result
+
+    def load(self, file_path):
+        dic = None
+        with open(file_path, "r") as file:
+            dic = json.load(file)
+        result = super().dic_type(dic)
+        return result
+
+class TOML_S(MySerializer):
+
+    def dump(self, obj, file_path):
+        data = super().obj_dic(obj)
+        with open(file_path, "w") as file:
+            toml.dump(data, file)
+
+    def dumps(self, obj):
+        data = super().obj_dic(obj)
+        toml_data = toml.dumps(data)
+        return toml_data
+
+
+    def loads(self, s):
+        data = toml.loads(s)
+        result = super().dic_type(data)
+        return result
+
+    def load(self, file_path):
+        data = None
+        with open(file_path, "r") as file:
+            data = toml.load(file)
+        result = super().dic_type(data)
+        return result
+
+class YAML_S(MySerializer):
+    
+    def dump(self, obj, file_path):
+        data = super().obj_dic(obj)
+        with open(file_path, "w") as file:
+            yaml.dump(data, file)
+
+    def dumps(self, obj):
+        data = super().obj_dic(obj)
+        yaml_data = yaml.dump(data)
+        return yaml_data
+
+    def loads(self, s):
+        data = yaml.load(s, Loader=yaml.FullLoader)
+        result = super().dic_type(data)
+        return result
+
+    def load(self, file_path):
+        data= None
+        with open(file_path, "r") as file:
+            data= yaml.load(file, Loader=yaml.FullLoader)
+        result = super().dic_type(data)
+        return result
+
+class PICKLE_S(MySerializer):
+    
+    def dump(self, obj, file_path):
+        data = super().obj_dic(obj)
+        with open(file_path, "wb") as file:
+            pickle.dump(data, file)
+
+    def dumps(self, obj):
+        data = super().obj_dic(obj)
+        pickle_data = pickle.dumps(data)
+        return pickle_data
+
+    def loads(self, s):
+        data = pickle.loads(s)
+        result = super().dic_type(data)
+        return result
+
+    def load(self, file_path):
+        data = None
+        with open(file_path, "rb") as file:
+            data = pickle.load(file)
+        result = super().dic_type(data)
+        return result
+
+
+def create_S(input_format, output_format):
+
+    if input_format.endswith(".json"):
+        deserializer = JSON_S()
+    elif input_format.endswith(".pickle"):
+        deserializer = PICKLE_S()
+    elif input_format.endswith(".toml"):
+        deserializer = TOML_S()
+    elif input_format.endswith(".yaml"):
+        deserializer = YAML_S()
+    else: raise Exception("Invalid format!")
+
+
+    if (output_format == "json"):
+        serializer = JSON_S()
+    elif (output_format == "pickle"):
+        serializer = PICKLE_S()
+    elif (output_format == "toml"):
+        serializer = TOML_S()
+    elif (output_format == "yaml"):
+        serializer = YAML_S()
+    else: raise Exception("Invalid format!")
+    return (serializer, deserializer)
+
