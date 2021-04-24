@@ -1,1 +1,4 @@
 lab1/venv/*
+lab2/modules/__pycache__/*.pyc
+*.idea
+lab2/modules/.coverage
