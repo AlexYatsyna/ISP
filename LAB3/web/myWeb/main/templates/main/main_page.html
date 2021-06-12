@@ -1,0 +1,28 @@
+{% extends 'main/base.html' %}
+
+{% block middle_body %}
+    <h1 class="display-5 " style = "color: #000000; padding-left: 500px;"><em>Bulletin Board Number One</em></h1>
+    {% if posts %}
+        {% for post in posts %}
+        <div class="post">
+            <br>
+
+            <div class="pb-10 mb-10 ">
+
+            <a href="{% url 'ad_detail' pk=post.pk %}" class="text-dark" >
+                <h2 align="center"><em>{{ post.title }}</em></h2>
+            </a>
+
+            <div class="date">
+                <p align="center"><em>{{ post.published_date }} by {{post.author}}</em></p>
+            </div>
+                    </div>
+
+        </div>
+        {% endfor %}
+    {% else %}
+        <br><br><br><br>
+            <h3 class="nop" align="center">No posts here...</h3>
+    <br><br><br><br>
+    {% endif %}
+{% endblock %}
