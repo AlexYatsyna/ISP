@@ -71,19 +71,6 @@ def test_faq(client, user):
     assert resp_get.status_code == 200
 
 
-@pytest.mark.django_db
-def test_edit_ad(client, user, post):
-    client.login(username=user.username, password="zxcvb")
-    resp_get = client.get("/ad/" + str(post.pk) + "/edit")
-    assert resp_get.status_code == 200
-
-    data = {"title": post.title, "text": "kljkljkljl"}
-    resp_post = client.post("/ad/" + str(post.pk) + "/edit", data)
-    assert resp_post.status_code == 302
-    assert Post.objects.filter(author=user).last().text == data["text"]
-
-
-
 
 
 

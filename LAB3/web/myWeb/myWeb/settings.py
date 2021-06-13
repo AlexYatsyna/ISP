@@ -66,14 +66,14 @@ LOGGING = {
             'class': 'logging.FileHandler',
             'filename': 'debug.log',
         },
-          'console': {
-           'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
-        },
+         # 'console': {
+         #  'level': 'DEBUG',
+        #    'class': 'logging.StreamHandler',
+        #},
     },
     'loggers': {
         'django': {
-            'handlers': ['file','console'],
+            'handlers': ['file'],#,'console'],
             'propagate': True,
             'level': 'DEBUG'
         },

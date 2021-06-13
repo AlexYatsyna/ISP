@@ -1,16 +1,16 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from .models import Post
+from django.shortcuts import render, redirect
 from django.utils import timezone
 from django.contrib.auth import login, authenticate, logout
 from .forms import PostForm, UserRegistrationForm
 from django.contrib.auth.forms import AuthenticationForm
 import logging
+from . import async_methods
+import asyncio
 logger = logging.getLogger('django')
 
 
 def main_page(request):
-    posts = Post.objects.filter(published_date__lte=timezone.now()).order_by('-published_date')
-    return render(request, 'main/main_page.html', {'posts': posts})
+    return render(request, 'main/main_page.html', {'posts': asyncio.run(async_methods.get_all_posts())})
 
 
 def faq(request):
@@ -18,8 +18,7 @@ def faq(request):
 
 
 def ad_detail(request, pk):
-    post = get_object_or_404(Post, pk=pk)
-    return render(request, 'main/ad_detail.html', {'post': post})
+    return render(request, 'main/ad_detail.html', {'post': asyncio.run(async_methods.get_post_pk(pk))})
 
 
 def add_new(request):
@@ -41,7 +40,7 @@ def add_new(request):
 
 
 def ad_edit(request, pk):
-    post = get_object_or_404(Post, pk=pk)
+    post = asyncio.run(async_methods.get_post_pk(pk))
     if post.author == request.user:
         if request.method == "POST":
             form = PostForm(request.POST, instance=post)
@@ -49,7 +48,7 @@ def ad_edit(request, pk):
                 post = form.save(commit=False)
                 post.author = request.user
                 post.save()
-                logger.info(request.user.username + " changed ad " )
+                logger.info(request.user.username + " changed ad ")
                 return redirect('ad_detail', pk=post.pk)
             logger.error(request.user.username + " can't change ad")
         else:
@@ -59,16 +58,15 @@ def ad_edit(request, pk):
 
 
 def ad_delete(request, pk):
-    post = get_object_or_404(Post, pk=pk)
+    post = asyncio.run(async_methods.get_post_pk(pk))
     if post.author == request.user:
-        Post.objects.filter(pk=pk).delete()
+        post.delete()
         logger.info(request.user.username + " deleted ad ")
     return redirect('home')
 
 
 def us_profile(request, pk):
-    posts =Post.objects.filter(author=pk)
-    return render(request, 'main/profile.html', {'posts': posts})
+    return render(request, 'main/profile.html', {'posts': asyncio.run(async_methods.get_filter_posts_by_author(pk))})
 
 
 def do_logout(request):
