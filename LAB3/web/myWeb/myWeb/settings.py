@@ -66,14 +66,14 @@ LOGGING = {
             'class': 'logging.FileHandler',
             'filename': 'debug.log',
         },
-         # 'console': {
-         #  'level': 'DEBUG',
-        #    'class': 'logging.StreamHandler',
-        #},
+          'console': {
+           'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+        },
     },
     'loggers': {
         'django': {
-            'handlers': ['file'],#,'console'],
+            'handlers': ['file','console'],
             'propagate': True,
             'level': 'DEBUG'
         },
@@ -87,12 +87,13 @@ WSGI_APPLICATION = 'myWeb.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': os.environ.get('SQL_ENGINE', 'django.db.backends.sqlite3'),
-        'NAME': os.environ.get('SQL_DATABASE', os.path.join(BASE_DIR, 'db.sqlite3')),
-        'USER': os.environ.get('SQL_USER', 'web_user'),
-        'PASSWORD': os.environ.get('SQL_PASSWORD', 'password123'),
-        'HOST': os.environ.get('SQL_HOST', 'localhost'),
-    }
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'webDB',
+        'HOST': 'localhost',
+        'PORT': '3306',
+        'USER': 'root',
+        'PASSWORD': 'root',
+}
 }
 
 

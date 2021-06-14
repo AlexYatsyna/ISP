@@ -3,7 +3,8 @@ from django.contrib.auth import get_user_model
 from main.models import Post
 from main.forms import PostForm, UserRegistrationForm
 from django.urls import reverse
-
+from main import async_methods
+import asyncio
 User = get_user_model()
 
 
@@ -69,8 +70,6 @@ def test_faq(client, user):
     client.login(username=user.username, password="zxcvb")
     resp_get = client.get("/faq")
     assert resp_get.status_code == 200
-
-
 
 
 
