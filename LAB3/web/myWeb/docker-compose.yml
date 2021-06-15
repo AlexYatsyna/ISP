@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  db:
+    image: mysql:5.7
+    ports:
+      - 3306
+    environment:
+      MYSQL_DATABASE: 'webDB'
+      MYSQL_USER: 'userdb'
+      MYSQL_PASSWORD: 'root2'
+      MYSQL_ROOT_PASSWORD: 'root'
+    restart: always
+    volumes:
+      - ./webDB:/var/lib/mysql
+  web:
+    build: .
+    command: python /usr/src/web/manage.py runserver 0.0.0.0:8000
+    environment:
+      WAIT_HOSTS: mysql:3306
+    volumes:
+      - .:/usr/src/web
+    ports:
+      - '8000:8000'
+    depends_on:
+      - db
